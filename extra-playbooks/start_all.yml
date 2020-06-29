@@ -1,0 +1,18 @@
+---
+ - hosts: postgres_nodes
+   gather_facts: no
+   become: true
+   tasks:
+   - name: Start all services
+     systemd: 
+       name: postgresql-9.6
+       state: started
+
+ - hosts: tower
+   gather_facts: no
+   become: true
+   tasks:
+   - name: Start all services
+     shell: ansible-tower-service start
+
+ 

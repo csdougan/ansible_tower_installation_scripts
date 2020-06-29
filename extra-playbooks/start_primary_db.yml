@@ -1,0 +1,9 @@
+---
+ - hosts: postgres_active
+   gather_facts: no
+   become: true
+   tasks:
+   - name: Start services
+     systemd:
+       name: postgresql-9.6
+       state: started

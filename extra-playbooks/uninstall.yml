@@ -1,0 +1,40 @@
+- hosts: database
+  gather_facts: false
+  become: true
+  tasks:
+  - name: remove postgres packages
+    yum:
+      name: "postgresql96-server-9.6.6*"
+      state: absent
+
+  - name: Remove files
+    file:
+      path: "/var/lib/pgsql/*"
+      state: absent
+
+
+- hosts: tower
+  gather_facts: false
+  become: true
+  tasks:
+  - name: Check if tower service binary exists
+    stat:
+      path: /usr/bin/ansible-tower-service
+    register: tower_service_binary
+
+  - name: shut down tower
+    shell: /usr/bin/ansible-tower-service stop
+    when: tower_service_binary.stat.exists == True
+    ignore_errors: true
+      
+  - name: Remove tower packages
+    yum:
+      name: ["ansible-tower*","rabbitmq-server"]
+      state: absent
+
+  - name: remove tower files
+    file:
+      path: ["/etc/tower","/var/lib/{pgsql,awx,rabbitmq}"]
+      state: absent
+
+ 

@@ -1,0 +1,47 @@
+---
+ - hosts: tower
+   gather_facts: false
+   become: true
+   tasks:
+     - name: Set /tmp to mountable
+       mount:
+         path: /tmp
+         src: /dev/mapper/rootvg-tmplv
+         fstype: xfs
+         opts: defaults,noatime
+         state: mounted
+
+     - name: Create Logical volume
+       lvol:
+         lv: workspacelv
+         vg: rootvg
+         size: "10G"
+     
+     - name: Create Filesystem
+       filesystem:
+         fstype: xfs
+         dev: /dev/mapper/rootvg-workspacelv
+     
+ 
+     - name: Create Mount Point
+       file:
+         state: directory
+         path: /workspace
+         owner: root
+         group: root
+         mode: 0777
+
+     - name: Create Mount
+       mount:
+         path: /workspace
+         src: /dev/mapper/rootvg-workspacelv
+         fstype: xfs
+         state: mounted
+
+     - name: Set file perms post-mount
+       file:
+         path: /workspace
+         owner: root
+         group: root
+         mode: 0777
+

@@ -1,0 +1,40 @@
+---
+ - hosts: localhost
+   gather_facts: false
+   vars_files:
+    - "{{ playbook_dir }}/../vars/nexus_details.yml"
+    - "{{ playbook_dir }}/../vars/ansible_download.yml"
+   tasks:
+    - name: Get latest version
+      shell: "curl -s {{ ansible_url }}|grep -e '{{ nexus_artifact }}-[0-9].*' | grep -v el6 | grep -v el8 | awk -F'\"' '{print $6}'|tail -n1| sed 's/^.*setup-bundle-//g'|sed 's/[.]tar.*//g'"
+      register: latest_version
+      environment:
+        http_proxy: "{{ proxy_addr }}"
+        https_proxy: "{{ proxy_addr }}"
+
+
+    - name: Get current version
+      shell: "curl -s 'http://{{ nexus_host }}/nexus/service/local/lucene/search?r={{ nexus_repo }}&g={{ nexus_group }}&a={{ nexus_artifact }}'|grep '<version>'|sed 's|</.*||g'|sed 's/^.*>//g'|sort -n|tail -n1"
+      register: current_version
+
+    - debug:
+        msg: "current ver : {{ current_version.stdout }}    latest_ver: {{ latest_version.stdout }}"
+
+    - block:
+       - name: Download Package from website
+         shell: "wget {{ ansible_url }}/{{ nexus_artifact }}-{{ latest_version.stdout }}.tar.gz -O /tmp/{{ nexus_artifact }}-{{ latest_version.stdout }}.{{ nexus_package }}"
+         environment:
+           http_proxy: "{{ proxy_addr }}"
+           https_proxy: "{{ proxy_addr }}"
+         become: false
+
+       - debug:
+           msg: "Newer version found - Downloading version {{ latest_version.stdout }}"
+
+       - name: Upload to Nexus
+         shell: "curl -v -F 'r={{ nexus_repo }}' -F 'g={{ nexus_group }}' -F 'a={{ nexus_artifact }}' -F 'v={{ latest_version.stdout }}' -F 'p={{ nexus_package }}' -F 'file=@/tmp/{{ nexus_artifact }}-{{ latest_version.stdout }}.tgz' -u {{ nexus_user }}:{{ nexus_pwd }} http://{{ nexus_host }}/nexus/service/local/artifact/maven/content"
+      when: latest_version.stdout != current_version.stdout
+
+    - debug:
+        msg: "No new version found;   Current version {{ current_version.stdout }} appears to be the latest"
+      when: latest_version.stdout == current_version.stdout

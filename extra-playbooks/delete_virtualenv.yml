@@ -1,0 +1,20 @@
+---
+  - hosts: all
+    gather_facts: false
+    become: true
+    vars:
+      venv_path: /var/lib/awx/venv/custom_env
+    tasks:
+     - name: Clean virtualenv
+       shell: "virtualenv --clear {{ venv_path }}"
+       args:
+         removes: "{{ venv_path }}"
+
+     - name: Remove virtualenv
+       file:
+         name: "{{ venv_path }}"
+         state: absent
+
+
+
+

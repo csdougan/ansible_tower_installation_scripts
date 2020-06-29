@@ -1,0 +1,47 @@
+---
+ - name: Stage install package from Nexus within workspace
+   hosts: localhost
+   gather_facts: false
+   become: false
+   vars_files:
+    - "{{ playbook_dir }}/../vars/nexus_details.yml"
+   tasks:
+   - maven_artifact:
+       repository_url: "http://{{ nexus_host }}/nexus/service/local/repositories/{{ nexus_repo }}/content"
+       group_id: "{{ nexus_group }}"
+       artifact_id: "{{ nexus_artifact }}"
+       extension: "{{ nexus_package }}"
+       version: latest
+       dest: /tmp/ansible-tower-latest.tgz
+       validate_certs: no
+
+   - file:
+       path: /tmp/ansible_update
+       state: absent
+
+   - file:
+       path: /tmp/ansible_update
+       state: directory
+
+   - unarchive:
+       src: /tmp/ansible-tower-latest.tgz
+       dest: /tmp/ansible_update
+       remote_src: yes
+       
+   - file:
+       path: /tmp/ansible-tower-latest.tgz
+       state: absent
+   
+   - name: Get name of unpacked dir
+     shell: ls /tmp/ansible_update
+     register: ansible_update_name
+
+   - name: Copy untarred files into playbook dir
+     shell: "cp -R /tmp/ansible_update/{{ ansible_update_name.stdout }}/* /tmp/ansible_update/"
+
+#   - name: copy project files into staged area
+#     shell: "cp -R {{ playbook_dir }}/../* /tmp/ansible_update/"
+
+   - file:
+       path: "/tmp/ansible_update/{{ ansible_update_name.stdout }}"
+       state: absent

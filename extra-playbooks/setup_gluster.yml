@@ -1,0 +1,73 @@
+---
+ - hosts: tower
+   become: true
+   gather_facts: false
+   vars:
+     gluster_mount_path: /mnt/gluster_bricks
+     gluster_config:
+       ansible_venv:
+         size: 5G
+         path: /var/lib/awx/venv
+       ansible_projects:
+         size: 10G
+         path: /var/lib/awx/projects
+   tasks:
+    - name: Create LVs
+      lvol:
+        vg: awxvg
+        lv: "{{ item.key }}lv"
+        size: "{{ item.value.size }}"
+      with_dict: "{{ gluster_config }}"
+
+    - name: Create fses
+      filesystem:
+        fstype: xfs
+        dev: "/dev/mapper/awxvg-{{ item.key }}lv"
+      with_dict: "{{ gluster_config }}"
+        
+    - name: Ensure Gluster brick mount directories exist.
+      file:
+        path: "{{ gluster_mount_path }}/{{ item.key }}"
+        state: directory
+        mode: 0775
+      with_dict: "{{ gluster_config }}"
+
+    - name: Mount gluster bricks
+      mount: 
+        src: "/dev/mapper/awxvg-{{ item.key }}lv"
+        path: "{{ gluster_mount_path }}/{{ item.key }}"
+        fstype: xfs
+        state: mounted
+      with_dict: "{{ gluster_config }}"
+
+    - name: Ensure Gluster packages are installed.
+      yum:
+        name: ['glusterfs-server', 'glusterfs-client']
+        state: present
+
+    - name: Disable the firewalld service
+      service:
+        name: glusterd
+        state: started
+        enabled: true
+
+    - name: Configure Gluster volume.
+      gluster_volume:
+        state: present
+        name: "{{ item.key }}"
+        brick: "{{ gluster_mount_path }}/{{ item.key }}"
+        replicas: "{{ groups.tower|length }}"
+        cluster: "{{ groups.tower | join(',') }}"
+        host: "{{ inventory_hostname }}"
+        force: yes
+      with_dict: "{{ gluster_config }}"
+      run_once: true
+
+    - name: Ensure Gluster volume is mounted.
+      mount:
+        name: "{{ item.value.path }}"
+        src: "{{ inventory_hostname }}:/{{ item.key }}"
+        fstype: glusterfs
+        opts: "defaults,_netdev"
+        state: present
+      with_dict: "{{ gluster_config }}"

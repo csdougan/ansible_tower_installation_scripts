@@ -1,0 +1,93 @@
+---
+ - hosts: tower
+   gather_facts: false
+   become: true
+   tasks:
+     - name: create vgs
+       lvg: 
+         vg: awxvg
+         pvs: /dev/sdb
+         state: present
+
+     - name: check if projectlv already exists
+       stat:
+         path: /dev/mapper/awxvg-projectlv
+       register: projectlvstate
+
+     - name: check if workspacelv already exists
+       stat:
+         path: /dev/mapper/awxvg-workspacelv
+       register: workspacelvstate
+
+     - name: create project fs
+       lvol: 
+         vg: awxvg
+         lv: projectlv
+         shrink: no
+         size: '90%VG'
+       when: projectlvstate.stat.exists != True
+
+     - name: create workspace fs
+       lvol:
+         vg: awxvg
+         lv: workspacelv
+         shrink: no
+         size: '10%VG'
+       when: workspacelvstate.stat.exists != True
+
+     - name: create mount point for projectlv
+       file:
+        state: directory
+        path: /var/lib/awx/projects
+        owner: awx
+        group: awx
+        mode: 0755
+
+     - name: create mount point for workspacelv
+       file:
+        state: directory
+        path: /workspace
+        owner: awx
+        group: awx
+        mode: 0755
+
+     - name: create filesystem for projectlv
+       filesystem:
+         fstype: xfs
+         dev: /dev/mapper/awxvg-projectlv
+
+     - name: create filesystem for workspacelv
+       filesystem:
+         fstype: xfs
+         dev: /dev/mapper/awxvg-workspacelv
+
+     - name: Create mount point for projectlv
+       mount:
+         path: /var/lib/awx/projects
+         src: /dev/mapper/awxvg-projectlv
+         state: mounted
+         fstype: xfs
+
+     - name: Create mount point for workspacelv
+       mount:
+         path: /workspace
+         src: /dev/mapper/awxvg-workspacelv
+         state: mounted
+         fstype: xfs
+
+     - name:  set perms for /var/lib/awx/projects
+       file:
+        path: /var/lib/awx/projects
+        owner: awx
+        group: awx
+        mode: 0755
+
+     - name: set permissions for /workspace
+       file:
+        path: /workspace
+        owner: awx
+        group: awx
+        mode: 0755
+
+
+

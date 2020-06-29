@@ -1,0 +1,57 @@
+---
+ - hosts: postgres_nodes
+   gather_facts: false
+   become: true
+   tasks:
+     - name: Add Group
+       group:
+         name: postgres
+         gid: 26
+         state: present
+
+     - name: Add User
+       user:
+         name: postgres
+         uid: 26
+         group: postgres
+         state: present
+
+     - name: Create Volume Group
+       lvg:
+         vg: postgresvg
+         pvs: /dev/sdb
+
+     - name: Create Logical volume
+       lvol:
+         lv: postgreslv
+         vg: postgresvg
+         size: "100%VG"
+     
+     - name: Create Filesystem
+       filesystem:
+         fstype: xfs
+         dev: /dev/mapper/postgresvg-postgreslv
+     
+ 
+     - name: Create Mount Point
+       file:
+         state: directory
+         path: /var/lib/pgsql
+         owner: postgres
+         group: postgres
+         mode: 0700
+
+     - name: Create Mount
+       mount:
+         path: /var/lib/pgsql
+         src: /dev/mapper/postgresvg-postgreslv
+         fstype: xfs
+         state: mounted
+
+     - name: Set file perms post-mount
+       file:
+         path: /var/lib/pgsql
+         owner: postgres
+         group: postgres
+         mode: 0700
+

@@ -1,0 +1,20 @@
+---
+ - hosts: tower
+   gather_facts: no
+   become: true
+   tasks:
+   - name: Stop all services
+     shell: ansible-tower-service stop
+
+ 
+ - hosts: postgres_nodes
+   gather_facts: no
+   become: true
+   tasks:
+   - name: Stop all services
+     systemd: 
+       name: postgresql-9.6
+       state: stopped
+
+
+ 

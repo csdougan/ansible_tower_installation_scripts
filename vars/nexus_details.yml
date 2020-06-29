@@ -1,0 +1,8 @@
+---
+ nexus_host: "sonatype-nexus-host:8081"
+ nexus_repo: Ansible-Release
+ nexus_group: tower.package
+ nexus_artifact: "ansible-tower-setup-bundle"
+ nexus_package: tgz
+ nexus_user: "" 
+ nexus_pwd: ""

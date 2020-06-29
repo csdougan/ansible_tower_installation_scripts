@@ -1,0 +1,17 @@
+[tower]
+
+[database:children]
+postgres_active
+
+[postgres_nodes:children]
+postgres_active
+postgres_standby
+
+[postgres_active]
+
+[postgres_standby]
+
+[psip-dev:children]
+postgres_nodes
+tower
+database

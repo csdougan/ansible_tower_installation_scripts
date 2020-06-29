@@ -1,0 +1,19 @@
+---
+pg_host: 'pgdb.co.uk'
+pg_port: '5432'
+pg_database: 'awx'
+pg_username: 'awx'
+pg_replication_user: replication
+rabbitmq_username: tower
+rabbitmq_cookie: givemeacookie
+ldap_group_dn: 
+ldap_user_dn: 
+nexus_host: sonatype-nexus-host.co.uk 
+nexus_port: 8081
+nexus_rpm_repo_for_tower: Ansible-Tower-RPMS
+nexus_rpm_repo_subdir_dependencies: ansible-tower-dependencies
+ansible_tower_dependencies_rpm_repo_url: "http://{{ nexus_host }}:{{ 8081 }}/nexus/content/sites/{{ nexus_rpm_repo_for_tower }}/{{ nexus_rpm_repo_subdir_dependencies }}/"
+rabbitmq_enable_manager: true
+rabbitmq_use_long_name: true
+ansible_become: true
+bundle_install: true

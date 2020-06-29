@@ -1,0 +1,5 @@
+---
+bundle_install: true
+ansible_become: true
+controller: tower
+...
